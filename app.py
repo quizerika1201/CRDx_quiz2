@@ -133,14 +133,17 @@ else:
     curr_idx = st.session_state.current_index
     
     if curr_idx < total_q:
+
         q_data = st.session_state.quiz_list[curr_idx]
         
         st.progress((curr_idx) / total_q)
         st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (モード: {'復習モード' if st.session_state.mode=='retry' else '通常ランダム'})")
         st.markdown(f"**Q. {q_data['question']}**")
         
-        # --- この問題専用のシャッフル済み選択肢をセッションに保持する ---
+        # --- この問題のシャッフル済み選択肢を管理する ---
         shuffle_key = f"shuffled_options_{curr_idx}"
+        
+        # まだ一度も表示していない、かつ、まだ「回答する」を押していない時だけシャッフルする
         if shuffle_key not in st.session_state:
             options_with_status = [
                 (q_data['option1'], q_data['option1'] == q_data['answer']),
