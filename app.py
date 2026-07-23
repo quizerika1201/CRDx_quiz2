@@ -70,6 +70,14 @@ if "user_choice" not in st.session_state:
     st.session_state.user_choice = None
 
 def init_quiz(retry_mode=False):
+
+    # 古いシャッフルデータをクリアする
+    for key in list(st.session_state.keys()):
+        if key.startswith("shuffled_options_"):
+            del st.session_state[key]
+            
+    # （既存の初期化処理がここに続きます）
+    # 例: st.session_state.quiz_list = ... など
     st.session_state.mode = "retry" if retry_mode else "normal"
     if retry_mode:
         source_df = df_questions[df_questions['id'].isin(st.session_state.wrong_questions)]
@@ -140,10 +148,9 @@ else:
         st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (モード: {'復習モード' if st.session_state.mode=='retry' else '通常ランダム'})")
         st.markdown(f"**Q. {q_data['question']}**")
         
-        # --- この問題のシャッフル済み選択肢を管理する ---
+        # --- この問題専用のシャッフル済み選択肢を保持 ---
         shuffle_key = f"shuffled_options_{curr_idx}"
         
-        # まだ一度も表示していない、かつ、まだ「回答する」を押していない時だけシャッフルする
         if shuffle_key not in st.session_state:
             options_with_status = [
                 (q_data['option1'], q_data['option1'] == q_data['answer']),
@@ -157,7 +164,6 @@ else:
         options_with_status = st.session_state[shuffle_key]
         options = [item[0] for item in options_with_status]
         correct_ans = next(item[0] for item in options_with_status if item[1])
-        # -------------------------------------------------------------
         
         user_choice = st.radio("選択肢を選んでください:", options, key=f"radio_{curr_idx}", index=None if not st.session_state.answered_current else options.index(st.session_state.user_choice))
         
