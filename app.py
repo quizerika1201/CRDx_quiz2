@@ -197,7 +197,7 @@ else:
                 st.session_state.user_choice = None
                 st.rerun()
     else:
-        st.balloons()
+        
         st.header("🎯 クイズ終了！お疲れ様でした！")
         st.metric(label="今回の結果", value=f"{st.session_state.score} / {total_q} 問正解", delta=f"正答率: {(st.session_state.score/total_q)*100:.1f}%")
         
