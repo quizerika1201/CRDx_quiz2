@@ -87,6 +87,16 @@ def init_quiz(retry_mode=False):
 
 # --- サイドバー（メニュー） ---
 st.sidebar.header("📌 メニュー")
+
+if st.sidebar.button("🏠 ホームに戻る（最初から）"):
+    st.session_state.quiz_list = []
+    st.session_state.current_index = 0
+    st.session_state.score = 0
+    st.session_state.answered_current = False
+    st.session_state.user_choice = None
+    st.session_state.wrong_questions = []
+    st.rerun()
+
 if st.sidebar.button("🔄 すべての問題からランダム出題で開始"):
     init_quiz(retry_mode=False)
     st.rerun()
