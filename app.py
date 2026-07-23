@@ -88,7 +88,7 @@ def init_quiz(retry_mode=False):
 # --- サイドバー（メニュー） ---
 st.sidebar.header("📌 メニュー")
 
-if st.sidebar.button("🏠 ホームに戻る（最初から）"):
+if st.sidebar.button("🏠 ホームに戻る"):
     st.session_state.quiz_list = []
     st.session_state.current_index = 0
     st.session_state.score = 0
