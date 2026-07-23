@@ -32,7 +32,7 @@ def load_questions_from_sheet():
         
         # デバッグ用表示
         #st.warning(f"【デバッグ】スプレッドシートから取得できた行数: {len(rows)} 行")
-        if len(rows) > 0:
+        #if len(rows) > 0:
             st.info(f"【デバッグ】1行目の内容（見出し）: {rows[0]}")
         
         if len(rows) < 2:
