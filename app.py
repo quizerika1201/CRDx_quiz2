@@ -3,19 +3,29 @@ import streamlit as st
 
 st.set_page_config(page_title="クイズアプリ", page_icon="📝")
 
-# --- 余計なUI（メニュー、フッター、ヘッダー）をCSSで非表示にする ---
+# --- 余計なUIを隠しつつ、スマホのサイドバーボタンは残すCSS ---
 hide_streamlit_style = """
 <style>
-/* 右上の三本線メニューやDeployボタンを個別に非表示にする */
+/* 右上の三本線メニュー（設定など）を非表示 */
 #MainMenu {visibility: hidden;}
-.stDeployButton {display:none;}
+
+/* 右下のStreamlitバッジ（Cloud無料枠の仕様）を非表示 */
+#stDecoration {display:none;}
+
+/* フッター（Made with Streamlit）を非表示 */
 footer {visibility: hidden;}
 
-/* GitHubのアイコンやForkボタン、リンクなどを非表示にする */
-[data-testid="stToolbar"] {visibility: hidden;}
-.viewerBadge_container__1QSob {visibility: hidden;}
-header [data-testid="baseButton-header"] {display: none;}
+/* ヘッダー自体は消さず、その中にあるDeployボタンなどを非表示にする */
+header {visibility: hidden;}
+header[data-testid="stHeader"] {visibility: visible; background-color: transparent;}
+header > div > button {visibility: visible;}
 
+/* 
+念のため、スマホ用メニューボタンの要素を指定して強制的に表示させる
+（Streamlitのバージョンによりクラス名が変わる可能性があるため、
+もしこれで出なければ、前の「.stToolbar」を使う方法に戻します）
+*/
+button[aria-label="Open menu"] {visibility: visible;}
 </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
