@@ -22,7 +22,7 @@ import random
 # ページ設定
 st.set_page_config(page_title="検査学 資格試験対策クイズ", page_icon="🔬", layout="centered")
 
-st.title("🔬 検査学 資格試験対策クイズアプリ")
+st.title("CRDx アセスメント対策クイズ")
 st.write("スプレッドシート連動型・ランダム出題＆弱点克服モード")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
