@@ -10,6 +10,12 @@ hide_streamlit_style = """
 #MainMenu {visibility: hidden;}
 .stDeployButton {display:none;}
 footer {visibility: hidden;}
+
+/* GitHubのアイコンやForkボタン、リンクなどを非表示にする */
+[data-testid="stToolbar"] {visibility: hidden;}
+.viewerBadge_container__1QSob {visibility: hidden;}
+header [data-testid="baseButton-header"] {display: none;}
+
 </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
