@@ -6,15 +6,13 @@ st.set_page_config(page_title="クイズアプリ", page_icon="📝")
 # --- 余計なUI（メニュー、フッター、ヘッダー）をCSSで非表示にする ---
 hide_streamlit_style = """
 <style>
-/* 右上の三本線メニューやDeployボタン、GitHubアイコンなどを隠す */
+/* 右上の三本線メニューやDeployボタンを個別に非表示にする */
 #MainMenu {visibility: hidden;}
-header {visibility: hidden;}
+.stDeployButton {display:none;}
 footer {visibility: hidden;}
-
-/* 「Made with Streamlit」の文字を隠す */
-.viewerBadge_container__1QSob {visibility: hidden;}
 </style>
 """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 import pandas as pd
 import random
