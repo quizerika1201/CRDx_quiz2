@@ -101,10 +101,11 @@ if st.sidebar.button("🔄 すべての問題からランダム出題で開始")
     init_quiz(retry_mode=False)
     st.rerun()
 
-if st.session_state.wrong_questions:
-    if st.sidebar.button(f"⚠️ 間違えた問題だけ復習する ({len(st.session_state.wrong_questions)}問)"):
-        init_quiz(retry_mode=True)
-        st.rerun()
+# --- 常に表示する「間違えた問題の復習」ボタン ---
+wrong_count = len(st.session_state.wrong_questions)
+if st.sidebar.button(f"⚠️ 間違えた問題だけ復習する ({wrong_count}問)", disabled=(wrong_count == 0)):
+    init_quiz(retry_mode=True)
+    st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.info("💡 **使い方**\n1. スプレッドシート側で問題を編集・追加すると、アプリを再読み込みするだけで反映されます。\n2. iPhoneのSafariやPCからブラウザでアクセスできます。")
