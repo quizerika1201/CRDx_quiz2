@@ -166,7 +166,7 @@ if not st.session_state.quiz_list:
             init_quiz(retry_mode=True)
             st.rerun()
             
-    st.info("💡 サイドバーのメニューからもいつでも切り替えが可能です。")
+    #st.info("💡 サイドバーのメニューからもいつでも切り替えが可能です。")
 else:
     total_q = len(st.session_state.quiz_list)
     curr_idx = st.session_state.current_index
