@@ -185,6 +185,17 @@ else:
         else:
             st.success("素晴らしい！全問正解です！パーフェクト達成！")
             
-        if st.button("🏠 最初からやり直す"):
-            init_quiz(retry_mode=False)
-            st.rerun()
+       # 2つのボタンを並べる、または縦に配置する
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 もう一度最初からランダムで解く"):
+                init_quiz(retry_mode=False)
+                st.rerun()
+        with col2:
+            if st.button("🏠 トップ画面（ホーム）に戻る"):
+                st.session_state.quiz_list = []
+                st.session_state.current_index = 0
+                st.session_state.score = 0
+                st.session_state.answered_current = False
+                st.session_state.user_choice = None
+                st.rerun()
