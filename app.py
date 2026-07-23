@@ -142,7 +142,7 @@ if not st.session_state.quiz_list:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🚀 すべての問題からランダム開始", use_container_width=True):
+        if st.button("🚀 問題開始", use_container_width=True):
             init_quiz(retry_mode=False)
             st.rerun()
             
