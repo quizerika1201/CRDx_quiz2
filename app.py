@@ -1,40 +1,23 @@
 import streamlit as st
-import streamlit as st
-
-st.set_page_config(page_title="クイズアプリ", page_icon="📝")
-
-# --- 余計なUIを隠しつつ、スマホのサイドバーボタンは残すCSS ---
-hide_streamlit_style = """
-<style>
-/* 右上の三本線メニュー（設定など）を非表示 */
-#MainMenu {visibility: hidden;}
-
-/* 右下のStreamlitバッジ（Cloud無料枠の仕様）を非表示 */
-#stDecoration {display:none;}
-
-/* フッター（Made with Streamlit）を非表示 */
-footer {visibility: hidden;}
-
-/* ヘッダー自体は消さず、その中にあるDeployボタンなどを非表示にする */
-header {visibility: hidden;}
-header[data-testid="stHeader"] {visibility: visible; background-color: transparent;}
-header > div > button {visibility: visible;}
-
-/* 
-念のため、スマホ用メニューボタンの要素を指定して強制的に表示させる
-（Streamlitのバージョンによりクラス名が変わる可能性があるため、
-もしこれで出なければ、前の「.stToolbar」を使う方法に戻します）
-*/
-button[aria-label="Open menu"] {visibility: visible;}
-</style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 import pandas as pd
 import random
 
 # ページ設定
 st.set_page_config(page_title="検査学 資格試験対策クイズ", page_icon="🔬", layout="centered")
+
+# --- 余計なUIを隠しつつ、スマホのサイドバーボタンは残すCSS ---
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+#stDecoration {display:none;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+header[data-testid="stHeader"] {visibility: visible; background-color: transparent;}
+header > div > button {visibility: visible;}
+button[aria-label="Open menu"] {visibility: visible;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("CRDx アセスメント対策クイズ")
 st.write("ランダム出題＆弱点克服モード")
@@ -54,17 +37,10 @@ def load_questions_from_sheet():
         creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(creds)
         
-        # スプレッドシート名とタブ名で取得
         spreadsheet = client.open("CRDx_quiz_db")
         sheet = spreadsheet.worksheet("Questions")
         
-        # 取得できたすべての行を取り出す
         rows = sheet.get_all_values()
-        
-        # デバッグ用表示
-        #st.warning(f"【デバッグ】スプレッドシートから取得できた行数: {len(rows)} 行")
-        #if len(rows) > 0:
-            #st.info(f"【デバッグ】1行目の内容（見出し）: {rows[0]}")
         
         if len(rows) < 2:
             return pd.DataFrame()
@@ -101,14 +77,10 @@ if "user_choice" not in st.session_state:
     st.session_state.user_choice = None
 
 def init_quiz(retry_mode=False):
-
-    # 古いシャッフルデータをクリアする
     for key in list(st.session_state.keys()):
         if key.startswith("shuffled_options_"):
             del st.session_state[key]
             
-    # （既存の初期化処理がここに続きます）
-    # 例: st.session_state.quiz_list = ... など
     st.session_state.mode = "retry" if retry_mode else "normal"
     if retry_mode:
         source_df = df_questions[df_questions['id'].isin(st.session_state.wrong_questions)]
@@ -140,14 +112,10 @@ if st.sidebar.button("クイズ開始"):
     init_quiz(retry_mode=False)
     st.rerun()
 
-# --- 常に表示する「間違えた問題の復習」ボタン ---
 wrong_count = len(st.session_state.wrong_questions)
 if st.sidebar.button(f"⚠️ 間違えた問題だけ復習する ({wrong_count}問)", disabled=(wrong_count == 0)):
     init_quiz(retry_mode=True)
     st.rerun()
-
-st.sidebar.markdown("---")
-st.sidebar.info("💡 **使い方**\n1. スプレッドシート側で問題を編集・追加すると、アプリを再読み込みするだけで反映されます。\n2. iPhoneのSafariやPCからブラウザでアクセスできます。")
 
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
@@ -166,20 +134,17 @@ if not st.session_state.quiz_list:
             init_quiz(retry_mode=True)
             st.rerun()
             
-    
 else:
     total_q = len(st.session_state.quiz_list)
     curr_idx = st.session_state.current_index
     
     if curr_idx < total_q:
-
         q_data = st.session_state.quiz_list[curr_idx]
         
         st.progress((curr_idx) / total_q)
         st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (モード: {'復習モード' if st.session_state.mode=='retry' else '通常ランダム'})")
         st.markdown(f"**Q. {q_data['question']}**")
         
-        # --- この問題専用のシャッフル済み選択肢を保持 ---
         shuffle_key = f"shuffled_options_{curr_idx}"
         
         if shuffle_key not in st.session_state:
@@ -228,7 +193,6 @@ else:
                 st.session_state.user_choice = None
                 st.rerun()
     else:
-        
         st.header("🎯 クイズ終了！お疲れ様でした！")
         st.metric(label="今回の結果", value=f"{st.session_state.score} / {total_q} 問正解", delta=f"正答率: {(st.session_state.score/total_q)*100:.1f}%")
         
@@ -240,7 +204,6 @@ else:
         else:
             st.success("素晴らしい！全問正解です！パーフェクト達成！")
             
-       # 2つのボタンを並べる、または縦に配置する
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔄 もう一度最初からランダムで解く"):
