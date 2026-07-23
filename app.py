@@ -139,7 +139,20 @@ else:
         st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (モード: {'復習モード' if st.session_state.mode=='retry' else '通常ランダム'})")
         st.markdown(f"**Q. {q_data['question']}**")
         
-        options = [q_data['option1'], q_data['option2'], q_data['option3'], q_data['option4']]
+        # 4つの選択肢とそれぞれの正解フラグをまとめる
+        options_with_status = [
+            (q_data['option1'], q_data['option1'] == q_data['answer']),
+            (q_data['option2'], q_data['option2'] == q_data['answer']),
+            (q_data['option3'], q_data['option3'] == q_data['answer']),
+            (q_data['option4'], q_data['option4'] == q_data['answer']),
+        ]
+        
+        # 毎回ランダムにシャッフルする
+        random.shuffle(options_with_status)
+        
+        # シャッフルされた選択肢のテキストのリストと、正解のテキストを取り出す
+        options = [item[0] for item in options_with_status]
+        correct_ans = next(item[0] for item in options_with_status if item[1])
         
         user_choice = st.radio("選択肢を選んでください:", options, key=f"radio_{curr_idx}", index=None if not st.session_state.answered_current else options.index(st.session_state.user_choice))
         
