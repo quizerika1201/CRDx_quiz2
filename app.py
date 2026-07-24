@@ -20,7 +20,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("DMR試験対策クイズ")
-st.write("大・サブカテゴリー別出題＆弱点克服モード（MAX10問）")
+st.write("カテゴリー別出題＆弱点克服モード（MAX10問/回）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
 @st.cache_data(ttl=60)
