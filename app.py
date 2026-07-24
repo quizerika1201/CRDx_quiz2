@@ -20,7 +20,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("CRDx アセスメント対策クイズ")
-st.write("カテゴリー別出題＆弱点克服モード（MAX10問）")
+st.write("大・サブカテゴリー別出題＆弱点克服モード（MAX10問）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
 @st.cache_data(ttl=60)
@@ -78,7 +78,7 @@ if "user_choice" not in st.session_state:
 if "balloons_shown" not in st.session_state:
     st.session_state.balloons_shown = False
 
-def init_quiz(selected_category="すべて"):
+def init_quiz(selected_category="すべて", selected_subcategory="すべて"):
     for key in list(st.session_state.keys()):
         if key.startswith("shuffled_options_"):
             del st.session_state[key]
@@ -90,13 +90,18 @@ def init_quiz(selected_category="すべて"):
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
     else:
+        # 大・サブカテゴリーによる絞り込み
         if selected_category == "すべて":
             st.session_state.mode = "normal"
             source_df = df_questions
             st.session_state.wrong_questions = []
         else:
-            st.session_state.mode = f"category_{selected_category}"
             source_df = df_questions[df_questions['category'] == selected_category]
+            if selected_subcategory != "すべて" and 'subcategory' in df_questions.columns:
+                source_df = source_df[source_df['subcategory'] == selected_subcategory]
+                st.session_state.mode = f"cat_{selected_category}_sub_{selected_subcategory}"
+            else:
+                st.session_state.mode = f"cat_{selected_category}_all"
         
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
@@ -131,15 +136,26 @@ if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)"
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
-    st.write("出題範囲を選んでスタートしてください。（最大10問/回）")
+    st.write("出題範囲を選んでスタートしてください。（通常は1回最大10問）")
     
+    # 大カテゴリーのリスト作成
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
-    selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
+    selected_cat = st.selectbox("🎯 大カテゴリーを選択:", categories)
+    
+    # 大カテゴリーの選択に連動したサブカテゴリーのリスト作成
+    selected_subcat = "すべて"
+    if selected_cat != "すべて" and 'subcategory' in df_questions.columns:
+        subcats_in_cat = df_questions[df_questions['category'] == selected_cat]['subcategory'].dropna().unique()
+        # 空文字や空白を除外
+        valid_subcats = [sc for sc in subcats_in_cat if str(sc).strip() != '']
+        if valid_subcats:
+            subcategories = ["すべて"] + list(valid_subcats)
+            selected_subcat = st.selectbox("📂 サブカテゴリーを選択:", subcategories)
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🚀 クイズ開始", use_container_width=True):
-            init_quiz(selected_category=selected_cat)
+            init_quiz(selected_category=selected_cat, selected_subcategory=selected_subcat)
             st.rerun()
             
     with col2:
@@ -156,7 +172,10 @@ else:
         q_data = st.session_state.quiz_list[curr_idx]
         
         st.progress((curr_idx) / total_q)
-        st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (カテゴリー: {q_data.get('category', '一般')})")
+        cat_disp = q_data.get('category', '一般')
+        subcat_disp = q_data.get('subcategory', '')
+        disp_text = f"カテゴリー: {cat_disp}" + (f" ＞ {subcat_disp}" if subcat_disp else "")
+        st.markdown(f"### 問題 {curr_idx + 1} / {total_q} ({disp_text})")
         st.markdown(f"**Q. {q_data['question']}**")
         
         shuffle_key = f"shuffled_options_{curr_idx}"
@@ -215,7 +234,6 @@ else:
         st.header("🎯 クイズ終了！お疲れ様でした！")
         st.metric(label="今回の結果", value=f"{st.session_state.score} / {total_q} 問正解", delta=f"正答率: {(st.session_state.score/total_q)*100:.1f}%")
         
-        # ★全問正解（スコアが総問題数と一致し、かつ問題数が1問以上）のときだけ風船を出す
         if st.session_state.score == total_q and total_q > 0:
             st.success("素晴らしい！全問正解です！パーフェクト達成！")
             if not st.session_state.balloons_shown:
