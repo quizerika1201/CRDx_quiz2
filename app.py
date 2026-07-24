@@ -19,7 +19,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("DMR資格試験　対策クイズ")
+st.title("CRDx アセスメント対策クイズ")
 st.write("カテゴリー別出題＆弱点克服モード（MAX10問）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
@@ -57,8 +57,8 @@ def load_questions_from_sheet():
 df_questions = load_questions_from_sheet()
 
 if df_questions.empty:
-    st.warning("問題データが読み込まれていません。スプレッドシートの設定を確認してください。")
-    st.stop()
+        st.warning("問題データが読み込まれていません。スプレッドシートの設定を確認してください。")
+        st.stop()
 
 # --- セッション状態の初期化 ---
 if "mode" not in st.session_state:
@@ -83,15 +83,19 @@ def init_quiz(selected_category="すべて"):
             
     if selected_category == "復習":
         st.session_state.mode = "retry"
-        source_df = df_questions[df_questions['id'].isin(st.session_state.wrong_questions)]
+        # IDを文字列に統一して確実にフィルタリングする
+        wrong_ids = [str(x) for x in st.session_state.wrong_questions]
+        source_df = df_questions[df_questions['id'].astype(str).isin(wrong_ids)]
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
-        # 復習のときは制限せず、間違えた問題をすべて出題する
+        # 復習時も最大10問（または間違えた問題数）に制限する
+        if len(questions) > 10:
+            questions = questions[:10]
     else:
         if selected_category == "すべて":
             st.session_state.mode = "normal"
             source_df = df_questions
-            st.session_state.wrong_questions = []
+            st.session_state.wrong_questions = [] # 新しく全体を始める時はリセット
         else:
             st.session_state.mode = f"category_{selected_category}"
             source_df = df_questions[df_questions['category'] == selected_category]
@@ -99,7 +103,7 @@ def init_quiz(selected_category="すべて"):
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
         
-        # 通常モードのときだけ、最大10問までに制限する
+        # 通常モードは最大10問に制限する
         if len(questions) > 10:
             questions = questions[:10]
         
@@ -128,7 +132,7 @@ if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)"
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
-    st.write("出題範囲を選んでスタートしてください。（通常は1回最大10問）")
+    st.write("出題範囲を選んでスタートしてください。（1回最大10問）")
     
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
     selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
@@ -188,7 +192,7 @@ else:
                     if user_choice == correct_ans:
                         st.session_state.score += 1
                     else:
-                        if q_data['id'] not in st.session_state.wrong_questions:
+                        if str(q_data['id']) not in [str(x) for x in st.session_state.wrong_questions]:
                             st.session_state.wrong_questions.append(q_data['id'])
                     st.rerun()
         else:
