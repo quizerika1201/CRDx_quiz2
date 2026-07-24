@@ -57,8 +57,8 @@ def load_questions_from_sheet():
 df_questions = load_questions_from_sheet()
 
 if df_questions.empty:
-        st.warning("問題データが読み込まれていません。スプレッドシートの設定を確認してください。")
-        st.stop()
+    st.warning("問題データが読み込まれていません。スプレッドシートの設定を確認してください。")
+    st.stop()
 
 # --- セッション状態の初期化 ---
 if "mode" not in st.session_state:
@@ -83,19 +83,17 @@ def init_quiz(selected_category="すべて"):
             
     if selected_category == "復習":
         st.session_state.mode = "retry"
-        # IDを文字列に統一して確実にフィルタリングする
-        wrong_ids = [str(x) for x in st.session_state.wrong_questions]
+        # 重複を除外しつつ、現在の間違えた問題リストを確実に文字列IDで抽出
+        wrong_ids = list(set([str(x) for x in st.session_state.wrong_questions]))
         source_df = df_questions[df_questions['id'].astype(str).isin(wrong_ids)]
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
-        # 復習時も最大10問（または間違えた問題数）に制限する
-        if len(questions) > 10:
-            questions = questions[:10]
+        # 復習のときは、登録されている間違えた問題の数そのままにする（10問制限はかけない）
     else:
         if selected_category == "すべて":
             st.session_state.mode = "normal"
             source_df = df_questions
-            st.session_state.wrong_questions = [] # 新しく全体を始める時はリセット
+            st.session_state.wrong_questions = [] # 新しく全体を始める時は不正解リストをリセット
         else:
             st.session_state.mode = f"category_{selected_category}"
             source_df = df_questions[df_questions['category'] == selected_category]
@@ -103,7 +101,7 @@ def init_quiz(selected_category="すべて"):
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
         
-        # 通常モードは最大10問に制限する
+        # 通常モード（すべて、またはカテゴリ別）のときだけ最大10問に制限する
         if len(questions) > 10:
             questions = questions[:10]
         
@@ -124,7 +122,7 @@ if st.sidebar.button("🏠 ホームに戻る"):
     st.session_state.user_choice = None
     st.rerun()
 
-wrong_count = len(st.session_state.wrong_questions)
+wrong_count = len(set(st.session_state.wrong_questions))
 if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)", disabled=(wrong_count == 0)):
     init_quiz(selected_category="復習")
     st.rerun()
@@ -132,7 +130,7 @@ if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)"
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
-    st.write("出題範囲を選んでスタートしてください。（1回最大10問）")
+    st.write("出題範囲を選んでスタートしてください。（通常は1回最大10問）")
     
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
     selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
@@ -144,7 +142,7 @@ if not st.session_state.quiz_list:
             st.rerun()
             
     with col2:
-        wrong_count = len(st.session_state.wrong_questions)
+        wrong_count = len(set(st.session_state.wrong_questions))
         if st.button(f"⚠️ 間違えた問題の復習 ({wrong_count}問)", disabled=(wrong_count == 0), use_container_width=True):
             init_quiz(selected_category="復習")
             st.rerun()
@@ -191,6 +189,9 @@ else:
                     correct_ans = q_data['answer']
                     if user_choice == correct_ans:
                         st.session_state.score += 1
+                        # 正解したら、もし間違えたリストに入っていればそこから除外する
+                        if q_data['id'] in st.session_state.wrong_questions:
+                            st.session_state.wrong_questions = [q_id for q_id in st.session_state.wrong_questions if str(q_id) != str(q_data['id'])]
                     else:
                         if str(q_data['id']) not in [str(x) for x in st.session_state.wrong_questions]:
                             st.session_state.wrong_questions.append(q_data['id'])
@@ -214,8 +215,9 @@ else:
         st.header("🎯 クイズ終了！お疲れ様でした！")
         st.metric(label="今回の結果", value=f"{st.session_state.score} / {total_q} 問正解", delta=f"正答率: {(st.session_state.score/total_q)*100:.1f}%")
         
-        if st.session_state.wrong_questions:
-            st.warning(f"今回は {len(st.session_state.wrong_questions)} 問の間違いがありました。")
+        wrong_count_end = len(set(st.session_state.wrong_questions))
+        if wrong_count_end > 0:
+            st.warning(f"今回は {wrong_count_end} 問の間違いがありました。")
             if st.button("⚠️ 間違えた問題だけをもう一度解く"):
                 init_quiz(selected_category="復習")
                 st.rerun()
@@ -232,6 +234,7 @@ else:
                 st.session_state.quiz_list = []
                 st.session_state.current_index = 0
                 st.session_state.score = 0
+                st.session_state.wrong_questions = []
                 st.session_state.answered_current = False
                 st.session_state.user_choice = None
                 st.rerun()
