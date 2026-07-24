@@ -19,7 +19,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("DMR 対策クイズ")
+st.title("CRDx アセスメント対策クイズ")
 st.write("カテゴリー別出題＆弱点克服モード")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
@@ -121,9 +121,7 @@ if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
     st.write("出題範囲を選んでスタートしてください。")
     
-    # スプレッドシートからカテゴリーの一覧を自動取得（重複なし）
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
-    
     selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
     
     col1, col2 = st.columns(2)
@@ -152,12 +150,16 @@ else:
         shuffle_key = f"shuffled_options_{curr_idx}"
         
         if shuffle_key not in st.session_state:
-            options_with_status = [
-                (q_data['option1'], q_data['option1'] == q_data['answer']),
-                (q_data['option2'], q_data['option2'] == q_data['answer']),
-                (q_data['option3'], q_data['option3'] == q_data['answer']),
-                (q_data['option4'], q_data['option4'] == q_data['answer']),
+            # 入力されている選択肢（空白や空文字でないもの）だけを自動で収集する
+            raw_options = [
+                q_data.get('option1', ''),
+                q_data.get('option2', ''),
+                q_data.get('option3', ''),
+                q_data.get('option4', '')
             ]
+            valid_options = [opt for opt in raw_options if opt and str(opt).strip() != '']
+            
+            options_with_status = [(opt, opt == q_data['answer']) for opt in valid_options]
             random.shuffle(options_with_status)
             st.session_state[shuffle_key] = options_with_status
 
