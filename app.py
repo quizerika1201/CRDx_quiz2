@@ -131,7 +131,7 @@ if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)"
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
-    st.write("出題範囲を選んでスタートしてください。（通常は1回最大10問）")
+    st.write("出題範囲を選んでスタートしてください。（最大10問/回）")
     
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
     selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
