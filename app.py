@@ -19,7 +19,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("CRDx アセスメント対策クイズ")
+st.title("DMR 対策クイズ")
 st.write("カテゴリー別出題＆弱点克服モード")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
