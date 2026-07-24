@@ -3,7 +3,7 @@ import pandas as pd
 import random
 
 # ページ設定
-st.set_page_config(page_title="検査学 資格試験対策クイズ", page_icon="🔬", layout="centered")
+st.set_page_config(page_title="DMR試験対策クイズ", page_icon="🔬", layout="centered")
 
 # --- CSS設定（UI調整） ---
 hide_streamlit_style = """
@@ -20,7 +20,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("DMR試験対策クイズ")
-st.write("カテゴリー別出題＆弱点克服モード（MAX10問）")
+st.write("大・サブカテゴリー別出題＆弱点克服モード（MAX10問）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
 @st.cache_data(ttl=60)
@@ -85,12 +85,15 @@ def init_quiz(selected_category="すべて", selected_subcategory="すべて"):
             
     if selected_category == "復習":
         st.session_state.mode = "retry"
-        wrong_ids = list(set([str(x) for x in st.session_state.wrong_questions]))
-        source_df = df_questions[df_questions['id'].astype(str).isin(wrong_ids)]
+        wrong_ids = [str(x).strip() for x in st.session_state.wrong_questions if str(x).strip() != '']
+        
+        df_temp = df_questions.copy()
+        df_temp['clean_id'] = df_temp['id'].astype(str).str.strip()
+        
+        source_df = df_temp[df_temp['clean_id'].isin(wrong_ids)]
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
     else:
-        # 大・サブカテゴリーによる絞り込み
         if selected_category == "すべて":
             st.session_state.mode = "normal"
             source_df = df_questions
@@ -128,7 +131,7 @@ if st.sidebar.button("🏠 ホームに戻る"):
     st.session_state.balloons_shown = False
     st.rerun()
 
-wrong_count = len(set(st.session_state.wrong_questions))
+wrong_count = len(set([str(x).strip() for x in st.session_state.wrong_questions if str(x).strip() != '']))
 if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)", disabled=(wrong_count == 0)):
     init_quiz(selected_category="復習")
     st.rerun()
@@ -138,15 +141,12 @@ if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
     st.write("出題範囲を選んでスタートしてください。（通常は1回最大10問）")
     
-    # 大カテゴリーのリスト作成
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
-    selected_cat = st.selectbox("🎯 カテゴリーを選択:", categories)
+    selected_cat = st.selectbox("🎯 大カテゴリーを選択:", categories)
     
-    # 大カテゴリーの選択に連動したサブカテゴリーのリスト作成
     selected_subcat = "すべて"
     if selected_cat != "すべて" and 'subcategory' in df_questions.columns:
         subcats_in_cat = df_questions[df_questions['category'] == selected_cat]['subcategory'].dropna().unique()
-        # 空文字や空白を除外
         valid_subcats = [sc for sc in subcats_in_cat if str(sc).strip() != '']
         if valid_subcats:
             subcategories = ["すべて"] + list(valid_subcats)
@@ -159,7 +159,7 @@ if not st.session_state.quiz_list:
             st.rerun()
             
     with col2:
-        wrong_count = len(set(st.session_state.wrong_questions))
+        wrong_count = len(set([str(x).strip() for x in st.session_state.wrong_questions if str(x).strip() != '']))
         if st.button(f"⚠️ 間違えた問題の復習 ({wrong_count}問)", disabled=(wrong_count == 0), use_container_width=True):
             init_quiz(selected_category="復習")
             st.rerun()
@@ -207,12 +207,14 @@ else:
                     st.session_state.answered_current = True
                     st.session_state.user_choice = user_choice
                     correct_ans = q_data['answer']
+                    current_q_id = str(q_data['id']).strip()
+                    
                     if user_choice == correct_ans:
                         st.session_state.score += 1
-                        if q_data['id'] in st.session_state.wrong_questions:
-                            st.session_state.wrong_questions = [q_id for q_id in st.session_state.wrong_questions if str(q_id) != str(q_data['id'])]
+                        st.session_state.wrong_questions = [q_id for q_id in st.session_state.wrong_questions if str(q_id).strip() != current_q_id]
                     else:
-                        if str(q_data['id']) not in [str(x) for x in st.session_state.wrong_questions]:
+                        current_wrong_strs = [str(x).strip() for x in st.session_state.wrong_questions]
+                        if current_q_id not in current_wrong_strs:
                             st.session_state.wrong_questions.append(q_data['id'])
                     st.rerun()
         else:
@@ -240,7 +242,7 @@ else:
                 st.balloons()
                 st.session_state.balloons_shown = True
         else:
-            wrong_count_end = len(set(st.session_state.wrong_questions))
+            wrong_count_end = len(set([str(x).strip() for x in st.session_state.wrong_questions if str(x).strip() != '']))
             if wrong_count_end > 0:
                 st.warning(f"今回は {wrong_count_end} 問の間違いがありました。")
                 if st.button("⚠️ 間違えた問題だけをもう一度解く"):
