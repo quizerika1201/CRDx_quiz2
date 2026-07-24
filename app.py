@@ -20,7 +20,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("DMR資格試験　対策クイズ")
-st.write("カテゴリー別出題＆弱点克服モード")
+st.write("カテゴリー別出題＆弱点克服モード（MAX10問）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
 @st.cache_data(ttl=60)
@@ -94,6 +94,11 @@ def init_quiz(selected_category="すべて"):
     
     questions = source_df.to_dict(orient="records")
     random.shuffle(questions)
+    
+    # ★ここで最大10問までに制限する（10問より多ければスライス）
+    if len(questions) > 10:
+        questions = questions[:10]
+        
     st.session_state.quiz_list = questions
     st.session_state.current_index = 0
     st.session_state.score = 0
@@ -119,7 +124,7 @@ if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)"
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
-    st.write("出題範囲を選んでスタートしてください。")
+    st.write("出題範囲を選んでスタートしてください。（1回最大10問）")
     
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
     selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
@@ -150,7 +155,6 @@ else:
         shuffle_key = f"shuffled_options_{curr_idx}"
         
         if shuffle_key not in st.session_state:
-            # 入力されている選択肢（空白や空文字でないもの）だけを自動で収集する
             raw_options = [
                 q_data.get('option1', ''),
                 q_data.get('option2', ''),
