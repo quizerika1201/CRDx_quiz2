@@ -19,7 +19,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("DMR試験対策クイズ")
+st.title("CRDx アセスメント対策クイズ")
 st.write("カテゴリー別出題＆弱点克服モード（MAX10問）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
@@ -75,6 +75,8 @@ if "answered_current" not in st.session_state:
     st.session_state.answered_current = False
 if "user_choice" not in st.session_state:
     st.session_state.user_choice = None
+if "balloons_shown" not in st.session_state:
+    st.session_state.balloons_shown = False
 
 def init_quiz(selected_category="すべて"):
     for key in list(st.session_state.keys()):
@@ -91,12 +93,10 @@ def init_quiz(selected_category="すべて"):
         if selected_category == "すべて":
             st.session_state.mode = "normal"
             source_df = df_questions
-            # ★「すべて」から新しく始める時は、前回の間違えたリストをリセット
             st.session_state.wrong_questions = []
         else:
             st.session_state.mode = f"category_{selected_category}"
             source_df = df_questions[df_questions['category'] == selected_category]
-            # ★特定のカテゴリを選ぶときは、そのカテゴリ以外の不正解は保持しつつ進める
         
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
@@ -109,6 +109,7 @@ def init_quiz(selected_category="すべて"):
     st.session_state.score = 0
     st.session_state.answered_current = False
     st.session_state.user_choice = None
+    st.session_state.balloons_shown = False
 
 # --- サイドバー（メニュー） ---
 st.sidebar.header("📌 メニュー")
@@ -117,9 +118,9 @@ if st.sidebar.button("🏠 ホームに戻る"):
     st.session_state.quiz_list = []
     st.session_state.current_index = 0
     st.session_state.score = 0
-    # ★ホームに戻っても wrong_questions（間違えた問題リスト）はクリアしないように削除しました
     st.session_state.answered_current = False
     st.session_state.user_choice = None
+    st.session_state.balloons_shown = False
     st.rerun()
 
 wrong_count = len(set(st.session_state.wrong_questions))
@@ -214,14 +215,19 @@ else:
         st.header("🎯 クイズ終了！お疲れ様でした！")
         st.metric(label="今回の結果", value=f"{st.session_state.score} / {total_q} 問正解", delta=f"正答率: {(st.session_state.score/total_q)*100:.1f}%")
         
-        wrong_count_end = len(set(st.session_state.wrong_questions))
-        if wrong_count_end > 0:
-            st.warning(f"今回は {wrong_count_end} 問の間違いがありました。")
-            if st.button("⚠️ 間違えた問題だけをもう一度解く"):
-                init_quiz(selected_category="復習")
-                st.rerun()
-        else:
+        # ★全問正解（スコアが総問題数と一致し、かつ問題数が1問以上）のときだけ風船を出す
+        if st.session_state.score == total_q and total_q > 0:
             st.success("素晴らしい！全問正解です！パーフェクト達成！")
+            if not st.session_state.balloons_shown:
+                st.balloons()
+                st.session_state.balloons_shown = True
+        else:
+            wrong_count_end = len(set(st.session_state.wrong_questions))
+            if wrong_count_end > 0:
+                st.warning(f"今回は {wrong_count_end} 問の間違いがありました。")
+                if st.button("⚠️ 間違えた問題だけをもう一度解く"):
+                    init_quiz(selected_category="復習")
+                    st.rerun()
             
         col1, col2 = st.columns(2)
         with col1:
@@ -233,7 +239,7 @@ else:
                 st.session_state.quiz_list = []
                 st.session_state.current_index = 0
                 st.session_state.score = 0
-                # ★こちらもホームに戻るボタンでは wrong_questions を消さないように修正
                 st.session_state.answered_current = False
                 st.session_state.user_choice = None
+                st.session_state.balloons_shown = False
                 st.rerun()
