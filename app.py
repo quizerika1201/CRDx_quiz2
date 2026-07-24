@@ -83,25 +83,24 @@ def init_quiz(selected_category="すべて"):
             
     if selected_category == "復習":
         st.session_state.mode = "retry"
-        # 重複を除外しつつ、現在の間違えた問題リストを確実に文字列IDで抽出
         wrong_ids = list(set([str(x) for x in st.session_state.wrong_questions]))
         source_df = df_questions[df_questions['id'].astype(str).isin(wrong_ids)]
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
-        # 復習のときは、登録されている間違えた問題の数そのままにする（10問制限はかけない）
     else:
         if selected_category == "すべて":
             st.session_state.mode = "normal"
             source_df = df_questions
-            st.session_state.wrong_questions = [] # 新しく全体を始める時は不正解リストをリセット
+            # ★「すべて」から新しく始める時は、前回の間違えたリストをリセット
+            st.session_state.wrong_questions = []
         else:
             st.session_state.mode = f"category_{selected_category}"
             source_df = df_questions[df_questions['category'] == selected_category]
+            # ★特定のカテゴリを選ぶときは、そのカテゴリ以外の不正解は保持しつつ進める
         
         questions = source_df.to_dict(orient="records")
         random.shuffle(questions)
         
-        # 通常モード（すべて、またはカテゴリ別）のときだけ最大10問に制限する
         if len(questions) > 10:
             questions = questions[:10]
         
@@ -118,6 +117,7 @@ if st.sidebar.button("🏠 ホームに戻る"):
     st.session_state.quiz_list = []
     st.session_state.current_index = 0
     st.session_state.score = 0
+    # ★ホームに戻っても wrong_questions（間違えた問題リスト）はクリアしないように削除しました
     st.session_state.answered_current = False
     st.session_state.user_choice = None
     st.rerun()
@@ -189,7 +189,6 @@ else:
                     correct_ans = q_data['answer']
                     if user_choice == correct_ans:
                         st.session_state.score += 1
-                        # 正解したら、もし間違えたリストに入っていればそこから除外する
                         if q_data['id'] in st.session_state.wrong_questions:
                             st.session_state.wrong_questions = [q_id for q_id in st.session_state.wrong_questions if str(q_id) != str(q_data['id'])]
                     else:
@@ -234,7 +233,7 @@ else:
                 st.session_state.quiz_list = []
                 st.session_state.current_index = 0
                 st.session_state.score = 0
-                st.session_state.wrong_questions = []
+                # ★こちらもホームに戻るボタンでは wrong_questions を消さないように修正
                 st.session_state.answered_current = False
                 st.session_state.user_choice = None
                 st.rerun()
