@@ -5,7 +5,7 @@ import random
 # ページ設定
 st.set_page_config(page_title="検査学 資格試験対策クイズ", page_icon="🔬", layout="centered")
 
-# --- 余計なUIを隠しつつ、スマホのサイドバーボタンは残すCSS ---
+# --- CSS設定（UI調整） ---
 hide_streamlit_style = """
 <style>
 #MainMenu {visibility: hidden;}
@@ -20,7 +20,7 @@ button[aria-label="Open menu"] {visibility: visible;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("CRDx アセスメント対策クイズ")
-st.write("ランダム出題＆弱点克服モード")
+st.write("カテゴリー別出題＆弱点克服モード")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
 @st.cache_data(ttl=60)
@@ -76,17 +76,21 @@ if "answered_current" not in st.session_state:
 if "user_choice" not in st.session_state:
     st.session_state.user_choice = None
 
-def init_quiz(retry_mode=False):
+def init_quiz(selected_category="すべて"):
     for key in list(st.session_state.keys()):
         if key.startswith("shuffled_options_"):
             del st.session_state[key]
             
-    st.session_state.mode = "retry" if retry_mode else "normal"
-    if retry_mode:
+    if selected_category == "復習":
+        st.session_state.mode = "retry"
         source_df = df_questions[df_questions['id'].isin(st.session_state.wrong_questions)]
-    else:
+    elif selected_category == "すべて":
+        st.session_state.mode = "normal"
         source_df = df_questions
         st.session_state.wrong_questions = []
+    else:
+        st.session_state.mode = f"category_{selected_category}"
+        source_df = df_questions[df_questions['category'] == selected_category]
     
     questions = source_df.to_dict(orient="records")
     random.shuffle(questions)
@@ -105,33 +109,33 @@ if st.sidebar.button("🏠 ホームに戻る"):
     st.session_state.score = 0
     st.session_state.answered_current = False
     st.session_state.user_choice = None
-    st.session_state.wrong_questions = []
-    st.rerun()
-
-if st.sidebar.button("クイズ開始"):
-    init_quiz(retry_mode=False)
     st.rerun()
 
 wrong_count = len(st.session_state.wrong_questions)
-if st.sidebar.button(f"⚠️ 間違えた問題だけ復習する ({wrong_count}問)", disabled=(wrong_count == 0)):
-    init_quiz(retry_mode=True)
+if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)", disabled=(wrong_count == 0)):
+    init_quiz(selected_category="復習")
     st.rerun()
 
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
-    st.markdown("### 🌸 クイズアプリへようこそ！")
-    st.write("下のボタンからモードを選んでスタートしてください。")
+    st.markdown("### 🌸 クイズメニューへようこそ！")
+    st.write("出題範囲を選んでスタートしてください。")
+    
+    # スプレッドシートからカテゴリーの一覧を自動取得（重複なし）
+    categories = ["すべて"] + list(df_questions['category'].dropna().unique())
+    
+    selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🚀 問題開始", use_container_width=True):
-            init_quiz(retry_mode=False)
+        if st.button("🚀 クイズ開始", use_container_width=True):
+            init_quiz(selected_category=selected_cat)
             st.rerun()
             
     with col2:
         wrong_count = len(st.session_state.wrong_questions)
-        if st.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)", disabled=(wrong_count == 0), use_container_width=True):
-            init_quiz(retry_mode=True)
+        if st.button(f"⚠️ 間違えた問題の復習 ({wrong_count}問)", disabled=(wrong_count == 0), use_container_width=True):
+            init_quiz(selected_category="復習")
             st.rerun()
             
 else:
@@ -142,7 +146,7 @@ else:
         q_data = st.session_state.quiz_list[curr_idx]
         
         st.progress((curr_idx) / total_q)
-        st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (モード: {'復習モード' if st.session_state.mode=='retry' else '通常ランダム'})")
+        st.markdown(f"### 問題 {curr_idx + 1} / {total_q} (カテゴリー: {q_data.get('category', '一般')})")
         st.markdown(f"**Q. {q_data['question']}**")
         
         shuffle_key = f"shuffled_options_{curr_idx}"
@@ -199,15 +203,15 @@ else:
         if st.session_state.wrong_questions:
             st.warning(f"今回は {len(st.session_state.wrong_questions)} 問の間違いがありました。")
             if st.button("⚠️ 間違えた問題だけをもう一度解く"):
-                init_quiz(retry_mode=True)
+                init_quiz(selected_category="復習")
                 st.rerun()
         else:
             st.success("素晴らしい！全問正解です！パーフェクト達成！")
             
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🔄 もう一度最初からランダムで解く"):
-                init_quiz(retry_mode=False)
+            if st.button("🔄 もう一度最初から解く"):
+                init_quiz(selected_category="すべて")
                 st.rerun()
         with col2:
             if st.button("🏠 トップ画面（ホーム）に戻る"):
