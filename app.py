@@ -84,20 +84,24 @@ def init_quiz(selected_category="すべて"):
     if selected_category == "復習":
         st.session_state.mode = "retry"
         source_df = df_questions[df_questions['id'].isin(st.session_state.wrong_questions)]
-    elif selected_category == "すべて":
-        st.session_state.mode = "normal"
-        source_df = df_questions
-        st.session_state.wrong_questions = []
+        questions = source_df.to_dict(orient="records")
+        random.shuffle(questions)
+        # 復習のときは制限せず、間違えた問題をすべて出題する
     else:
-        st.session_state.mode = f"category_{selected_category}"
-        source_df = df_questions[df_questions['category'] == selected_category]
-    
-    questions = source_df.to_dict(orient="records")
-    random.shuffle(questions)
-    
-    # ★ここで最大10問までに制限する（10問より多ければスライス）
-    if len(questions) > 10:
-        questions = questions[:10]
+        if selected_category == "すべて":
+            st.session_state.mode = "normal"
+            source_df = df_questions
+            st.session_state.wrong_questions = []
+        else:
+            st.session_state.mode = f"category_{selected_category}"
+            source_df = df_questions[df_questions['category'] == selected_category]
+        
+        questions = source_df.to_dict(orient="records")
+        random.shuffle(questions)
+        
+        # 通常モードのときだけ、最大10問までに制限する
+        if len(questions) > 10:
+            questions = questions[:10]
         
     st.session_state.quiz_list = questions
     st.session_state.current_index = 0
@@ -124,7 +128,7 @@ if st.sidebar.button(f"⚠️ 間違えた問題だけ復習 ({wrong_count}問)"
 # --- クイズ画面の本体 ---
 if not st.session_state.quiz_list:
     st.markdown("### 🌸 クイズメニューへようこそ！")
-    st.write("出題範囲を選んでスタートしてください。（1回最大10問）")
+    st.write("出題範囲を選んでスタートしてください。（通常は1回最大10問）")
     
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
     selected_cat = st.selectbox("🎯 出題カテゴリーを選択:", categories)
