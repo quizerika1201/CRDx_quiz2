@@ -19,8 +19,8 @@ button[aria-label="Open menu"] {visibility: visible;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("CRDx アセスメント対策クイズ")
-st.write("大・サブカテゴリー別出題＆弱点克服モード（MAX10問）")
+st.title("DMR試験対策クイズ")
+st.write("カテゴリー別出題＆弱点克服モード（MAX10問）")
 
 # --- Googleスプレッドシートからのデータ読み込み設定 ---
 @st.cache_data(ttl=60)
@@ -140,7 +140,7 @@ if not st.session_state.quiz_list:
     
     # 大カテゴリーのリスト作成
     categories = ["すべて"] + list(df_questions['category'].dropna().unique())
-    selected_cat = st.selectbox("🎯 大カテゴリーを選択:", categories)
+    selected_cat = st.selectbox("🎯 カテゴリーを選択:", categories)
     
     # 大カテゴリーの選択に連動したサブカテゴリーのリスト作成
     selected_subcat = "すべて"
